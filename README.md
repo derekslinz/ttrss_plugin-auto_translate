@@ -61,6 +61,14 @@ translate:
 
 Point the plugin at `http://translate` inside the Docker network (default). For host access, use `http://localhost:5000`.
 
+### Using the Docker Compose snippet
+
+- **Add the service**: Drop the snippet above into the `services:` section of your main `docker-compose.yml` alongside the TT-RSS containers. Keep the `argos_translate_data` named volume (defined at the bottom) so downloaded models persist across restarts.
+- **Match your networks**: If your stack defines custom networks, attach the `translate` service to the same network as the TT-RSS `app` container. Otherwise the default network is sufficient and no extra configuration is required.
+- **Expose or hide the API**: The service maps to port `80` internally and `5000` externally by default. Override the public port with `TRANSLATE_PORT=<port>` in your `.env` file (e.g. `TRANSLATE_PORT=5555`) or remove the `ports` entry if you only want in-cluster access.
+- **Start the translator**: Run `docker compose up -d translate` (or `docker-compose up -d translate`) from your stack directory. First boot downloads language models to the named volume and can take several minutes; track progress with `docker compose logs -f translate`.
+- **Wire it into the plugin**: Once the container reports `Server is running` in the logs, set the plugin's **Service URL** to `http://translate` (or `http://localhost:<port>` if you kept the public mapping) and save the preferences.
+
 ## Usage Notes
 
 - Translation requests happen on-demand per article; results are cached client-side during the session.
@@ -82,4 +90,3 @@ MIT License © 2024 — see repository root if bundled.
 ## Contributors
 
 - Original implementation: Derek Linz
-- Additional improvements: TT-RSS community via Codex CLI

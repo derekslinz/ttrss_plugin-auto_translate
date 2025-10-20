@@ -288,11 +288,19 @@ class Auto_Translate extends Plugin {
 			'/<img\b[^>]*>/i',
 			static function (array $matches) use (&$img_placeholders): string {
 				$index = count($img_placeholders);
-				$img_placeholders[$index] = $matches[0];
+				$token = '__AUTO_TRANSLATE_IMG_' . $index . '__';
 
-				return '<span class="auto-translate-img-placeholder" data-auto-translate-img-placeholder="'
-					. $index
-					. '"></span>';
+				$img_placeholders[$index] = [
+					"html" => $matches[0],
+					"placeholder" => '<span class="auto-translate-img-placeholder" data-auto-translate-img-placeholder="'
+						. $index
+						. '">'
+						. $token
+						. "</span>",
+					"token" => $token,
+				];
+
+				return $img_placeholders[$index]["placeholder"];
 			},
 			$content
 		);
@@ -372,16 +380,82 @@ class Auto_Translate extends Plugin {
 		$translated = preg_replace('/SC_(?:ON|OFF)/', '', $translated) ?? $translated;
 
 		if ($img_placeholders) {
-				$translated = preg_replace_callback(
-					'/<span\b[^>]*data-auto-translate-img-placeholder=["\']?(\d+)["\']?[^>]*>(.*?)<\/span>/is',
-					static function (array $matches) use ($img_placeholders): string {
-						$idx = (int)$matches[1];
+			$translated = strtr($translated, array_column($img_placeholders, "html", "placeholder"));
+		}
 
-						return $img_placeholders[$idx] ?? $matches[0];
+		if ($img_placeholders) {
+			$translated = preg_replace_callback(
+				'/<span\b[^>]*data-auto-translate-img-placeholder=["\']?(\d+)["\']?[^>]*>(.*?)<\/span>/is',
+				static function (array $matches) use ($img_placeholders): string {
+					$idx = (int)$matches[1];
+
+						return $img_placeholders[$idx]["html"] ?? $matches[0];
 					},
 					$translated
 				) ?? $translated;
+
+			$translated = preg_replace_callback(
+				'/<span\b[^>]*data-auto-translate-img-placeholder=["\']?(\d+)["\']?[^>]*\/?>/i',
+				static function (array $matches) use ($img_placeholders): string {
+					$idx = (int)$matches[1];
+
+					return $img_placeholders[$idx]["html"] ?? $matches[0];
+				},
+				$translated
+			) ?? $translated;
+
+			$token_map = [];
+
+			foreach ($img_placeholders as $placeholder) {
+				$token_map[$placeholder["token"]] = $placeholder["html"];
 			}
+
+			if ($token_map) {
+				$translated = strtr($translated, $token_map);
+			}
+
+			$translated = preg_replace_callback(
+				'/__AUTO_TRANSLATE_IMG_(\d+)__/',
+				static function (array $matches) use ($img_placeholders): string {
+					$idx = (int)$matches[1];
+
+					return $img_placeholders[$idx]["html"] ?? $matches[0];
+				},
+				$translated
+			) ?? $translated;
+
+			$missing_media = [];
+
+			foreach ($img_placeholders as $placeholder) {
+				$html = $placeholder["html"];
+				$needles = [$html];
+
+				if (preg_match('/\ssrc=["\']([^"\']+)["\']/i', $html, $src_match)) {
+					$src = $src_match[1];
+					$needles[] = $src;
+					$needles[] = htmlspecialchars($src, ENT_QUOTES | ENT_SUBSTITUTE, "UTF-8");
+				}
+
+				$found = false;
+
+				foreach ($needles as $needle) {
+					if ($needle !== "" && stripos($translated, $needle) !== false) {
+						$found = true;
+						break;
+					}
+				}
+
+				if (!$found) {
+					$missing_media[] = $html;
+				}
+			}
+
+			if ($missing_media) {
+				$translated .= '<div class="auto-translate-preserved-media">'
+					. implode("", $missing_media)
+					. "</div>";
+			}
+		}
 
 		$title_translated = null;
 

@@ -355,6 +355,22 @@ require(['dojo/_base/kernel', 'dojo/ready'], function (dojo, ready) {
 					this.ensureOriginal(container);
 					container.classList.add('auto-translate-replaced');
 
+					const preservedAttachments = Array.from(container.children)
+						.filter((node) => {
+							if (!node || node.nodeType !== Node.ELEMENT_NODE)
+								return false;
+
+							const cls = node.classList;
+
+							if (!cls)
+								return false;
+
+							return cls.contains('attachments-inline') ||
+								cls.contains('attachments') ||
+								cls.contains('enclosures') ||
+								cls.contains('enclosure');
+						});
+
 					const wrapper = document.createElement('div');
 					wrapper.className = 'auto-translate-replaced-wrapper';
 
@@ -387,6 +403,10 @@ require(['dojo/_base/kernel', 'dojo/ready'], function (dojo, ready) {
 
 					container.innerHTML = '';
 					container.appendChild(wrapper);
+
+					preservedAttachments.forEach((node) => {
+						container.appendChild(node);
+					});
 
 					return;
 				}

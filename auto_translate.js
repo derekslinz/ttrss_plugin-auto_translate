@@ -45,18 +45,17 @@ require(['dojo/_base/kernel', 'dojo/ready'], function (dojo, ready) {
 						title.textContent = title.dataset.autoTranslateTitleOriginal;
 					}
 
-					if (title.dataset.autoTranslateTitleAttr !== undefined) {
-						const originalAttr = title.dataset.autoTranslateTitleAttr;
+				if (title.dataset.autoTranslateTitleAttr !== undefined) {
+					const originalAttr = title.dataset.autoTranslateTitleAttr;
 
-						if (originalAttr) {
-							title.setAttribute('title', originalAttr);
-						} else {
-							title.removeAttribute('title');
-						}
+					if (originalAttr) {
+						title.setAttribute('title', originalAttr);
+					} else {
+						title.removeAttribute('title');
 					}
+				}
 
-					title.classList.remove('auto-translate-title-replaced');
-					title.removeAttribute('data-auto-translate-title-meta');
+				title.classList.remove('auto-translate-title-replaced');
 				});
 			},
 
@@ -85,25 +84,28 @@ require(['dojo/_base/kernel', 'dojo/ready'], function (dojo, ready) {
 						title.dataset.autoTranslateTitleAttr = title.getAttribute('title') ?? '';
 					}
 
-					if (this.isTitleReplaceMode()) {
-						title.textContent = translatedTitle;
+			if (this.isTitleReplaceMode()) {
+				title.textContent = translatedTitle;
 
-						if (metaLabel) {
-							title.setAttribute('title', metaLabel);
-							title.setAttribute('data-auto-translate-title-meta', metaLabel);
-						} else {
-							const originalAttr = title.dataset.autoTranslateTitleAttr;
+				const icon = document.createElement('span');
+				icon.className = 'material-icons auto-translate-icon auto-translate-title-inline-icon';
+				icon.textContent = 'translate';
+				if (metaLabel) icon.title = metaLabel;
+				title.prepend(icon);
 
-							if (originalAttr) {
-								title.setAttribute('title', originalAttr);
-							} else {
-								title.removeAttribute('title');
-							}
+				if (metaLabel) {
+					title.setAttribute('title', metaLabel);
+				} else {
+					const originalAttr = title.dataset.autoTranslateTitleAttr;
 
-							title.removeAttribute('data-auto-translate-title-meta');
-						}
+					if (originalAttr) {
+						title.setAttribute('title', originalAttr);
+					} else {
+						title.removeAttribute('title');
+					}
+				}
 
-						title.classList.add('auto-translate-title-replaced');
+				title.classList.add('auto-translate-title-replaced');
 					} else {
 						const supplement = document.createElement('div');
 						supplement.className = 'auto-translate-title-supplement';

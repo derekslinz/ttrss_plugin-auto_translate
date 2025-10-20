@@ -283,8 +283,26 @@ class Auto_Translate extends Plugin {
 			return;
 		}
 
+		$img_placeholders = [];
+		$content_for_translation = preg_replace_callback(
+			'/<img\b[^>]*>/i',
+			static function (array $matches) use (&$img_placeholders): string {
+				$index = count($img_placeholders);
+				$img_placeholders[$index] = $matches[0];
+
+				return '<span class="auto-translate-img-placeholder" data-auto-translate-img-placeholder="'
+					. $index
+					. '"></span>';
+			},
+			$content
+		);
+
+		if ($content_for_translation === null) {
+			$content_for_translation = $content;
+		}
+
 		$params = [
-			"q" => $content,
+			"q" => $content_for_translation,
 			"source" => $source_lang ?: "auto",
 			"target" => $target,
 			"format" => "html",
@@ -352,6 +370,18 @@ class Auto_Translate extends Plugin {
 
 		$translated = (string)$data["translatedText"];
 		$translated = preg_replace('/SC_(?:ON|OFF)/', '', $translated) ?? $translated;
+
+		if ($img_placeholders) {
+				$translated = preg_replace_callback(
+					'/<span\b[^>]*data-auto-translate-img-placeholder=["\']?(\d+)["\']?[^>]*>(.*?)<\/span>/is',
+					static function (array $matches) use ($img_placeholders): string {
+						$idx = (int)$matches[1];
+
+						return $img_placeholders[$idx] ?? $matches[0];
+					},
+					$translated
+				) ?? $translated;
+			}
 
 		$title_translated = null;
 

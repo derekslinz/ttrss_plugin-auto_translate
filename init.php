@@ -36,7 +36,7 @@ class Auto_Translate extends Plugin {
 
 		$stored_url = $this->host->get($this, "translator_url", "");
 
-		if ($stored_url === "http://translate) {
+		if ($stored_url === "http://translate") {
 			$this->host->set($this, "translator_url", $this->defaults()["translator_url"]);
 		}
 
